@@ -3,9 +3,9 @@ const router = express.Router()
 
 const { signup, signin} = require('../controllers/auth')
 
-router.route('/signup')
+router.route('/login/signup')
     .post(signup)
-router.route('/signin')
+router.route('/login/signin')
     .post(signin)
 
 

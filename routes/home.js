@@ -5,7 +5,7 @@ const roomController = require('../controllers/roomController')
 
 //we can use this get route to initiate the "chat room"
 
-router.route('/')
+router.route('/home')
     .get()
 
 module.exports = router

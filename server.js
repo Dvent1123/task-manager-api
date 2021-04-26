@@ -4,7 +4,6 @@ const app = express()
 const cors = require('cors')
 const PORT = 5000 || process.env.PORT
 const passport = require('passport')
-const indexRouter = require('./routes/index')
 const usersRouter = require('./routes/users')
 const tasksRouter = require('./routes/tasks')
 const homeRouter = require('./routes/home')
@@ -103,11 +102,10 @@ db.on('error', error => console.log(error))
 db.once('open', ()=> console.log('Connected to Mongoose'))
 
 
-app.use('/', indexRouter)
-app.use('/users', usersRouter)
-app.use('/tasks', tasksRouter)
-app.use('/login', authRoutes)
-app.use('/home', homeRouter)
+app.use('/api', usersRouter)
+app.use('/api', tasksRouter)
+app.use('/api', authRoutes)
+app.use('/api', homeRouter)
 
 server.listen(PORT, ()=> {
     console.log('server is running')
