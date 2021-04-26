@@ -15,14 +15,14 @@ const authRoutes = require('./routes/auth')
 const server= require('http').createServer(app)
 const io = require('socket.io')(server, {
     cors: {
-        origin: 'http://localhost:3000',
+        origin: `${process.env.CLIENT_URL}`,
         methods: ['GET', 'POST']
     }
 })
 const jwt = require('jsonwebtoken')
 
 if(process.env.NODE_ENV == 'development'){
-    app.use(cors({origin: `http://localhost:3000`}))
+    app.use(cors({origin: `${process.env.CLIENT_URL}`}))
 }
 app.use(passport.initialize())
 require('./config/passport')
