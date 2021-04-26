@@ -1,9 +1,8 @@
 require('dotenv').config()
 const express = require('express')
 const app = express()
-const bodyParser = require('body-parser')
 const cors = require('cors')
-const port = 5000 || process.env.PORT
+const PORT = 5000 || process.env.PORT
 const passport = require('passport')
 const indexRouter = require('./routes/index')
 const usersRouter = require('./routes/users')
@@ -21,7 +20,10 @@ const io = require('socket.io')(server, {
     }
 })
 const jwt = require('jsonwebtoken')
-app.use(cors())
+
+if(process.env.NODE_ENV == 'development'){
+    app.use(cors({origin: `http://localhost:3000`}))
+}
 app.use(passport.initialize())
 require('./config/passport')
 
@@ -89,11 +91,8 @@ io.on('connection', socket => {
             })
 })    
 
-
-
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: false}))
-
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 
 const mongoose = require('mongoose')
@@ -110,6 +109,6 @@ app.use('/tasks', tasksRouter)
 app.use('/login', authRoutes)
 app.use('/home', homeRouter)
 
-server.listen(port, ()=> {
+server.listen(PORT, ()=> {
     console.log('server is running')
 })
