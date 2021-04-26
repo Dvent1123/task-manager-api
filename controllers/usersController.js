@@ -29,8 +29,8 @@ exports.getUsers = async (req, res) => {
     }) (req, res)
 }
 
-exports.newUser= async (io, userFromServer) => {
-    let {username, password, roomId, role, job} = userFromServer
+exports.newUser= async (io, userFromServer, people) => {
+    let {username, password, roomId, role, job, currentUser} = userFromServer
 
     let errors = [];
     if (!username) {
@@ -41,7 +41,7 @@ exports.newUser= async (io, userFromServer) => {
     }
     if (errors.length > 0) {
         result = {success: false,data: false, message: errors[0].message}
-        return io.in(roomId).emit('UserAdded', result)
+        return io.to(people[currentUser]).emit('UserAdded', result)                
     }
 
 
@@ -50,7 +50,7 @@ exports.newUser= async (io, userFromServer) => {
             .then(user => {
                 if(user){
                     result = {success: false, data: user, message: 'User already exists'}
-                    io.in(roomId).emit('UserAdded', result)
+                    return io.to(people[currentUser]).emit('UserAdded', result)                
                 } else {
                     //if you're signingup then you must be an admin
                     //or else the admin will add you to a project
@@ -70,7 +70,7 @@ exports.newUser= async (io, userFromServer) => {
                             user.save((err, user) => {
                                 if(err) {
                                     result = {success: false, data: err, message: 'Error creating user'}
-                                    io.in(roomId).emit('UserAdded', result)
+                                    return io.to(people[currentUser]).emit('UserAdded', result)                
                                 }else{
                                     //if user saved successful then add user
                                     //to room with ID
@@ -81,11 +81,11 @@ exports.newUser= async (io, userFromServer) => {
                                             room.save((err, newRoom) => {
                                                 if(err){
                                                     result = {success: false, data: err, message: 'Error adding user to room'}
-                                                    io.in(roomId).emit('UserAdded', result)
-                                                }else{
-                                                    result = {success: true, data: user, message: 'Created User!'}
-                                                    io.in(roomId).emit('UserAdded', result)
+                                                    return io.to(people[currentUser]).emit('UserAdded', result)                
                                                 }
+                                                
+                                                result = {success: true, data: user, message: 'Created User!'}
+                                                io.to(people[currentUser]).emit('UserAdded', result)                
                                             })
                                         }
                                     })
@@ -99,8 +99,8 @@ exports.newUser= async (io, userFromServer) => {
 
 }
 
-exports.updateUser = async (io, userFromServer) => {
-    let {id, username, password, roomId, role, job} = userFromServer
+exports.updateUser = async (io, userFromServer, people) => {
+    let {id, username, password, roomId, role, job, currentUser} = userFromServer
     let result
     
     let errors = [];
@@ -109,7 +109,7 @@ exports.updateUser = async (io, userFromServer) => {
     }
     if (errors.length > 0) {
         result = {success: false,data: false, message: errors[0].message}
-        return io.in(roomId).emit('UserUpdated', result)
+        return io.to(people[currentUser]).emit('UserUpdated', result)                
     }
     
     User.findById(id)
@@ -123,11 +123,10 @@ exports.updateUser = async (io, userFromServer) => {
                     user.save((err, updatedUser) => {
                         if(err){
                             result = {success: false, data: err, message: 'Error updating user'}
-                            io.in(user.roomId).emit('UserUpdated', result)
-                        }else{
-                            result = {success: true, data: updatedUser, message: 'User updated!'}
-                            io.in(user.roomId).emit('UserUpdated', result)
+                            return io.to(people[currentUser]).emit('UserUpdated', result)                
                         }
+                        result = {success: true, data: updatedUser, message: 'User updated!'}
+                        return io.to(people[currentUser]).emit('UserUpdated', result)                
                     })
 
                 })             
@@ -137,16 +136,16 @@ exports.updateUser = async (io, userFromServer) => {
 }
 
 
-exports.deleteUser = async (io, id) => {
+exports.deleteUser = async (io, data) => {
+        const {currentUser, id} = data
         let user = await User.findById(id)
         let result
         user.remove((err, deletedUser) => {
             if(err) {
                 result = {success: false, error: err}
-                console.log(result)            
-            }else {
-                result = {success: true, data: deletedUser}
-                io.in(user.roomId).emit('UserDeleted', result)  
-            }            
+                return io.to(people[currentUser]).emit('UserDeleted', result)                
+            }
+            result = {success: true, data: deletedUser}
+            io.to(people[currentUser]).emit('UserDeleted', result)                
         })
 }

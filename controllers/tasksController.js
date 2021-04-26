@@ -39,7 +39,7 @@ exports.newTask = async (io, taskFromServer, people) => {
     }
     if (errors.length > 0) {
         result = {success: false,data: false, message: errors[0].message}
-        return io.in(roomId).emit('TaskAdded', result)
+        return io.to(people[createdBy]).emit('TaskAdded', result)                
     }
 
     const newTask = new Tasks({
@@ -53,18 +53,20 @@ exports.newTask = async (io, taskFromServer, people) => {
         newTask.save((err, task) => {
             if(err) {
                 result = {success: false, data: err, message: 'There was an error saving the task'}
-                io.in(roomId).emit('TaskAdded', result)
-            }else{
-                result = {success: true, data: task, message: 'The task was added!'}
-                io.in(roomId).emit('TaskAdded', result)
+                return io.to(people[createdBy]).emit('TaskAddedd', result)                
             }
+            
+            result = {success: true, data: task, message: 'The task was added!'}
+            io.in(roomId).emit('TaskAdded', result)
+
         })
         
         
 }
 
 exports.updateTask = async (io, taskFromServer, people) => {
-    const {id, createdBy, roomId, assignedTo, status, desc} = taskFromServer
+    const {id, createdBy, roomId, assignedTo, status, desc, userName} = taskFromServer
+    console.log(userName + ' this is username')
 
     let result
     
@@ -76,8 +78,8 @@ exports.updateTask = async (io, taskFromServer, people) => {
         errors.push({ message: "Each task must have a status"});
     }
     if (errors.length > 0) {
-        result = {success: false,data: false, message: errors[0].message}
-        io.to(people[createdBy]).emit('TaskUpdated', result)                
+        result = {success: false, data: false, message: errors[0].message}
+        return io.to(people[userName]).emit('TaskUpdated', result)                
     }
 
         let task = await Tasks.findById(id)
@@ -90,26 +92,27 @@ exports.updateTask = async (io, taskFromServer, people) => {
             task.save((err, updatedTask) => {
                 if(err) {
                     result = {success: false, data: err, message: 'There was an error saving the task.'}
-                    io.to(people[createdBy]).emit('TaskUpdated', result)                
-                }else{
-                    result = {success: true, data: updatedTask, message: 'Task updated!'}
-                    io.in(task.roomId).emit('TaskUpdated', result)
+                    return io.to(people[userName]).emit('TaskUpdated', result)                
                 }
+                
+                result = {success: true, data: updatedTask, message: 'Task updated!'}
+                io.in(task.roomId).emit('TaskUpdated', result)
             })
 
 }
 
-exports.deleteTask = async (io, id) => {
+exports.deleteTask = async (io, data, people) => {
+        const { id, userName } = data
         let task = await Tasks.findById(id).then(test => {return test})
         let result
 
         task.remove((err, deletedTask) => {
             if(err) {
-                result = {success: false, error: err}
-                console.log(result)                       
-            }else{
-                result = {success: true,data: deletedTask}
-                io.in(task.roomId).emit('TaskDeleted', result)
+                result = {success: false, data: err, message: 'There was an error deleting the task.'}
+                return io.to(people[userName]).emit('TaskDeleted', result)            
             }
+           
+            result = {success: true,data: deletedTask}
+            io.in(task.roomId).emit('TaskDeleted', result)
         })
     }

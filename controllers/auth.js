@@ -106,7 +106,8 @@ exports.signin = (req, res) => {
                             user.username,
                             user._id,
                             user.roomId,
-                            3600
+                            user.role,
+                            36000
                         )
 
                         return res.status(200).send({succes:true, token: access_token})

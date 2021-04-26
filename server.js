@@ -49,7 +49,6 @@ io.on('connection', socket => {
                 roomController.joinRoom(io, room, socket.id)
                 if(people[userName] == null){
                     people[userName] = socket.id
-                    console.log(people[userName])
                 }
                 console.log(people)
             })
@@ -57,7 +56,6 @@ io.on('connection', socket => {
                 socket.leave(room)
                 if(people[userName]){
                     delete people[userName]
-                    console.log(people + 'this is poeple after deletion')
                 }
                 roomController.leaveRoom(io, room)
             })
@@ -70,20 +68,20 @@ io.on('connection', socket => {
                 tasksController.updateTask(io, data, people)
             })
 
-            socket.on('deleteTask', id => {
-                tasksController.deleteTask(io, id)
+            socket.on('deleteTask', data => {
+                tasksController.deleteTask(io, data, people)
             })
 
             socket.on('addUser', data => {
-                usersController.newUser(io, data)
+                usersController.newUser(io, data, people)
             })
 
             socket.on('updateUser', data => {
-                usersController.updateUser(io, data)
+                usersController.updateUser(io, data, people)
             })
 
             socket.on('deleteUser', id => {
-                usersController.deleteUser(io, id)
+                usersController.deleteUser(io, id, people)
             })
 
             socket.on('disconnect', () => {
