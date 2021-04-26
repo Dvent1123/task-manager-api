@@ -3,6 +3,7 @@ const express = require('express')
 const app = express()
 const cors = require('cors')
 const PORT = 5000 || process.env.PORT
+const HTTP_PORT = 8000 || process.env.HTTP_PORT
 const passport = require('passport')
 const usersRouter = require('./routes/users')
 const tasksRouter = require('./routes/tasks')
@@ -107,6 +108,13 @@ app.use('/api', tasksRouter)
 app.use('/api', authRoutes)
 app.use('/api', homeRouter)
 
+
+//this is for the http
+app.listen(HTTP_PORT, ()=> {
+    console.log('http is running on 8000')
+})
+
+//this is for the sockets
 server.listen(PORT, ()=> {
-    console.log('server is running')
+    console.log('socket server is running 5000')
 })
