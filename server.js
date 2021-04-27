@@ -14,6 +14,7 @@ const roomController = require('./controllers/roomController')
 const authRoutes = require('./routes/auth')
 const server= require('http').createServer(app)
 const io = require('socket.io')(server, {
+    path: '/mysocket',
     cors: {
         origin: `${process.env.CLIENT_URL}`,
         methods: ['GET', 'POST']
