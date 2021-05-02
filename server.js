@@ -79,6 +79,10 @@ io.on('connection', socket => {
                 usersController.newUser(io, data, people)
             })
 
+            socket.on('updateUserSettings', data => {
+                usersController.changeSettings(io, data, people)
+            })
+
             socket.on('updateUser', data => {
                 usersController.updateUser(io, data, people)
             })

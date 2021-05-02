@@ -29,6 +29,30 @@ exports.getUsers = async (req, res) => {
     }) (req, res)
 }
 
+exports.getUser = async (req, res) => {
+    passport.authenticate('jwt', {session: false}, async (err, user,info) => {
+        if(err) {
+            console.log(err)
+        }
+        if(info != undefined) {
+            console.log(info.message)
+            res.send(info.message)
+        }else {
+            try{
+                let currentUser = await User.findById(user._id)
+                return res.status(201).send({
+                    error: false,
+                    currentUser
+                })
+            }catch{
+                res.status(500).send({
+                    error: true
+                })
+            }
+        }
+    }) (req, res)
+}
+
 exports.newUser= async (io, userFromServer, people) => {
     let {username, password, roomId, role, job, currentUser} = userFromServer
 
@@ -43,9 +67,7 @@ exports.newUser= async (io, userFromServer, people) => {
         result = {success: false,data: false, message: errors[0].message}
         return io.to(people[currentUser]).emit('UserAdded', result)                
     }
-
-
-        
+   
         User.findOne({username: username})
             .then(user => {
                 if(user){
@@ -136,7 +158,7 @@ exports.updateUser = async (io, userFromServer, people) => {
 }
 
 
-exports.deleteUser = async (io, data) => {
+exports.deleteUser = async (io, data, people) => {
         const {currentUser, id} = data
         let user = await User.findById(id)
         let result
@@ -149,3 +171,107 @@ exports.deleteUser = async (io, data) => {
             io.to(people[currentUser]).emit('UserDeleted', result)                
         })
 }
+
+
+exports.changeSettings = async (io, userInfo, people) => {
+    //must validate that all info is present
+    //this is only allowed per user the the user that is changing the password is the current user
+    let {id, username,currentUser, current_password,new_password, new_password_confirmation, roomId, role, job} = userInfo
+    console.log(current_password + ' current password')
+
+    let errors = [];
+    if (!username) {
+        errors.push({ message: "User must have a username" });
+    }
+    if (!current_password) {
+        errors.push({ message: "You must enter your password to make changes"});
+    }
+    if(new_password !== new_password_confirmation) {
+        errors.push({message: "The new password and new password confirmation do not match"})
+    }
+    if (errors.length > 0) {
+        result = {success: false,data: false, message: errors[0].message}
+        return io.to(people[currentUser]).emit('updatedSettings', result)                
+    }
+   
+
+    User.findById(id)
+        .then(user => {
+            if(!user) {
+                //if user does not exist
+                result = {success: false, data: user, message: 'User does not exists'}
+                return io.to(people[currentUser]).emit('updatedSettings', result)                
+            } else {
+                //compare the old password with the user password that is current which is user.password
+                bcrypt.compare(current_password, user.password)
+                    .then(isMatch => {
+                        //if password doesn't match
+                        if(!isMatch) {
+                            result = {success: false, data: isMatch, message: 'The old password was incorrect'}
+                            return io.to(people[currentUser]).emit('updatedSettings', result)                
+                        }
+                        //if the password does match then check if the new password exists
+                        //if the new password does exists then use bcrypt to hash password
+                        if(!new_password.isEmpty()){
+                            bcrypt.genSalt(10, function(err, salt){
+                                bcrypt.hash(new_password, salt, function(err, hash) {
+                                    if (err) throw err
+                                    //this changes the user password
+                                    //and also saves the rest of the user info that was changed
+                                    user.password = hash
+                                    user.username = username,
+                                    user.roomId = roomId,
+                                    user.role = role,
+                                    user.job = job
+
+                                    user.save()
+                                        .then(response => {
+                                            //return if successful save
+                                           result = {success: true, data: response, message: 'User data saved with new password!'}
+                                           return io.to(people[currentUser]).emit('updatedSettings', result)                                
+                                        })
+                                        .catch(err => {
+                                            //return if error
+                                            result = {success: false, data: err, message: 'Something went wrong while hashing new password'}
+                                            return io.to(people[currentUser]).emit('updatedSettings', result)                
+                                        })
+                                })
+                            })
+                            .catch(err => {
+                                result = {success: false, data: err, message: 'Something went wrong generating the salt'}
+                                return io.to(people[currentUser]).emit('updatedSettings', result)                
+                            })
+                        }
+                        //if the new password was empty then it will just check the old password and if that is correct
+                        //then it will save the data
+                        //this is wrong bc current_password is not the hashed version
+                        user.username = username,
+                        user.password = user.password,
+                        user.roomId = roomId,
+                        user.role = role,
+                        user.job = job
+
+                        user.save()
+                        .then(response => {
+                            //return if successful save
+                           result = {success: true, data: response, message: 'User data saved!'}
+                           return io.to(people[currentUser]).emit('updatedSettings', result)                
+                        })
+                        .catch(err => {
+                            //return if error
+                            result = {success: false, data: err, message: 'Something went wrong while hashing new password'}
+                            return io.to(people[currentUser]).emit('updatedSettings', result)                
+                        })
+
+                    })
+            }
+        }).catch(err => {
+            result = {success: false, data: err, message: 'Something went wrong finding the user'}
+            return io.to(people[currentUser]).emit('updatedettings', result)                
+        })
+}
+
+//checks if the string is empty or if it is only whitespace
+String.prototype.isEmpty = function() {
+    return (this.length === 0 || !this.trim());
+};
