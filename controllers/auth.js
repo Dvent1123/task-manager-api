@@ -23,25 +23,36 @@ exports.signup = (req, res, next) => {
         return res.status(422).send({errors: errors});
     }
 
-    const room = new Room()
 
-    User.findOne({username: username})
-        .then(user => {
-            if(user){
-                return res.status(422).send({errors: [{message: "The user already exists"}]})
-            } else {
-                //if you're signingup then you must be an admin
-                //or else the admin will add you to a project
+    User.findOne({username: username}, function(err, user) {
+        if(err) {
+            console.log('this is the err')
+            console.log(err)
+            return res.status(500).send({
+                errors: [{ message: err }]
+            })
+        }
+        if(user){
+            return res.status(422).send({errors: [{message: "The user already exists"}]})
+        } else {
+            //if you're signingup then you must be an admin
+            //or else the admin will add you to a project
+            const room = new Room()
 
-                const user = new User({
-                        username: username,
-                        roomId: room._id,
-                        password: password,
-                        role: 'admin',
-                        job: 'admin'
-                    })
-
-                bcrypt.genSalt(10, function(err, salt){
+            const user = new User({
+                    username: username,
+                    roomId: room._id,
+                    password: password,
+                    role: 'admin',
+                    job: 'admin'
+                })
+            
+            bcrypt.genSalt(10, function(err, salt){
+                if(err) {
+                    return res.status(500).send({
+                        errors: [{ message: err }]
+                    })                
+                } else {
                     bcrypt.hash(password, salt, function(err, hash) {
                         if (err) throw err
                         user.password = hash
@@ -50,25 +61,29 @@ exports.signup = (req, res, next) => {
                                 //pushes the new user id into the room userIds array
                                 room.userIds.push(response._id)
                                 room.save()
-                                res.status(200).send({
-                                    success: true,
-                                    result: response
+                                    .then(newRoom => {
+                                        return res.status(200).send({
+                                            success: true,
+                                            result: response
+                                    })
+                                }).catch(err => {
+                                    return res.status(500).send({
+                                        errors: [{ message: err }]
+                                    })
                                 })
                             })
                             .catch(err => {
-                                res.status(500).send({
-                                    errors: [{ error: err }]
+                                return res.status(500).send({
+                                    errors: [{ message: err }]
                                 })
                             })
                     })
-                })
-                .catch(err => {
-                    res.status(500).send({
-                        errors: [{message: 'Something went wrong'}]
-                    })
-                })
-            }
-        })
+                }
+            })
+        }
+    })            
+
+    
 }
 
 exports.signin = (req, res) => {
@@ -116,7 +131,8 @@ exports.signin = (req, res) => {
                         res.status(500).send({ errors: err })
                     })
             }
-        }).catch(err => {
+        })
+        .catch(err => {
             res.status(500).send({errors: err})
         })
 }
