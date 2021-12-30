@@ -180,7 +180,6 @@ exports.updateUser = async (io, userFromServer, people) => {
     })
     .catch(err => {
       console.log(err);
-      console.log("this is in user catch");
     });
 };
 
