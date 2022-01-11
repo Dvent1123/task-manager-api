@@ -10,7 +10,6 @@ exports.getUsers = async (req, res) => {
       console.log(err);
     }
     if (info != undefined) {
-      console.log(info.message);
       res.send(info.message);
     } else {
       let usersArray = [];
@@ -35,7 +34,6 @@ exports.getUser = async (req, res) => {
       console.log(err);
     }
     if (info != undefined) {
-      console.log(info.message);
       res.send(info.message);
     } else {
       try {
@@ -158,7 +156,6 @@ exports.updateUser = async (io, userFromServer, people) => {
         result = { success: false, data: "error", message: "No user" };
         return io.to(people[currentUser]).emit("UserUpdated", result);
       }
-      console.log("this is username", user.username);
       (user.username = username),
         (user.password = password),
         (user.roomId = roomId),
@@ -211,7 +208,6 @@ exports.changeSettings = async (io, userInfo, people) => {
     role,
     job
   } = userInfo;
-  console.log(current_password + " current password");
 
   let errors = [];
   if (!username) {
