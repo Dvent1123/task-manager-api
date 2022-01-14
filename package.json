@@ -23,5 +23,10 @@
     "passport-local": "^1.0.0",
     "socket.io": "^3.1.1",
     "socketio-jwt": "^4.6.2"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "prettier": "^1.9.1",
+    "prettier-eslint": "^10.1.0"
   }
 }
